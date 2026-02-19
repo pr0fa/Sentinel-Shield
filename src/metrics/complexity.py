@@ -35,3 +35,38 @@ class ModuleComplexity:
         if not self.functions:
             return 0.0
         return self.total_complexity / len(self.functions)
+    
+class _ComplexityVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.complexity = 1 
+
+    def visit_If(self, node):
+        self.complexity += 1
+        self.generic_visit(node)
+
+    def visit_For(self, node):
+        self.complexity += 1
+        self.generic_visit(node)
+
+    def visit_While(self, node):
+        self.complexity += 1
+        self.generic_visit(node)
+
+    def visit_ExceptHandler(self, node):
+        self.complexity += 1
+        self.generic_visit(node)
+
+    def visit_BoolOp(self, node):
+        self.complexity += len(node.values) - 1
+        self.generic_visit(node)
+
+class ComplexityAnalyser:
+    def analyse_source(self, source_code: str, filepath: str = "<unknown>") -> ModuleComplexity:
+        tree = ast.parse(source_code, filename=filepath)
+        functions: List[FunctionComplexity] = []
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                visitor = _ComplexityVisitor()
+                visitor.visit(node)
+                functions.append(FunctionComplexity(name=node.name, lineno=node.lineno, complexity=visitor.complexity))
+        return ModuleComplexity(filepath=filepath, functions=functions)
