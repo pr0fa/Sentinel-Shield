@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <h1>Security Dashboard</h1>
+  <p class="page-subtitle">Upload and analyze code for security vulnerabilities</p>
+</div>
+
+<!-- ── Upload card ── -->
+<div class="card upload-card">
+  <h2 class="card-title">Upload Code for Analysis</h2>
+  <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data" id="upload-form">
+    <div class="upload-zone" id="upload-zone">
+      <div class="upload-zone-inner">
+        <div class="upload-icon-btn" id="upload-trigger">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+            <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
+            <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+          </svg>
+        </div>
+        <div class="upload-text">
+          <p>Drop your files here or click to browse</p>
+          <button type="button" class="btn-primary btn-sm" id="select-btn">Select Files</button>
+        </div>
+        <div class="upload-formats">
+          <p class="formats-label">Supported formats:</p>
+          <p class="formats-list">.py files (Python)</p>
+        </div>
+      </div>
+      <input type="file" name="files" id="file-input" multiple accept=".py" style="display:none" />
+    </div>
+  </form>
+</div>
+
+<!-- ── Results table ── -->
+<div class="card table-card">
+  <div class="table-header-bar">
+    <span>Recent Analysis Results</span>
+    <a href="{{ url_for('reports') }}" class="view-all">View All</a>
+  </div>
+
+  {% if results %}
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>File Name</th>
+        <th>Date</th>
+        <th>Issues Found</th>
+        <th>Risk Level</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+      <tr class="result-row" onclick="window.location='{{ url_for('analysis', file_id=r.id) }}'">
+        <td>
+          <div class="file-cell">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <span>{{ r.filename }}</span>
+          </div>
+        </td>
+        <td>
+          <div class="date-cell">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span>{{ r.scanned_at | time_ago }}</span>
+          </div>
+        </td>
+        <td class="issues-count">{{ r.scan.red_flag_count }}</td>
+        <td><span class="badge badge-{{ r.tdi.risk_level | lower }}">{{ r.tdi.risk_level }}</span></td>
+        <td class="action-cell">
+          <a href="{{ url_for('analysis', file_id=r.id) }}" class="btn-view">View →</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="table-footer">
+    <span>Showing {{ results | length }} result{% if results | length != 1 %}s{% endif %}</span>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+    </svg>
+    <p>No files analysed yet. Upload a Python file above to get started.</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+const zone     = document.getElementById('upload-zone');
+const input    = document.getElementById('file-input');
+const form     = document.getElementById('upload-form');
+const trigger  = document.getElementById('upload-trigger');
+const selectBtn = document.getElementById('select-btn');
+
+[trigger, selectBtn].forEach(el => el.addEventListener('click', () => input.click()));
+
+input.addEventListener('change', () => { if (input.files.length) form.submit(); });
+
+zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  const dt = new DataTransfer();
+  Array.from(e.dataTransfer.files).forEach(f => dt.items.add(f));
+  input.files = dt.files;
+  form.submit();
+});
+</script>
+
+{% endblock %}
