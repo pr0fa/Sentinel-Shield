@@ -1,13 +1,16 @@
 import sys
-from src.metrics.complexity import ComplexityAnalyser
-from src.security.vulnerability_scanner import VulnerabilityScanner
+import json
+from src.scanner import Scanner
 
 def main():
     if len(sys.argv) < 2: return
-    source = open(sys.argv[1]).read()
-    comp = ComplexityAnalyser().analyse_source(source, sys.argv[1])
-    vuln = VulnerabilityScanner().scan_source(source, sys.argv[1])
-    print(f"File: {sys.argv[1]} | Complexity: {comp.average_complexity} | Vulns: {len(vuln.red_flags)}")
+    scanner = Scanner()
+    with open(sys.argv[1], 'r') as f:
+        comp, scan, tdi = scanner.scan_source(f.read(), sys.argv[1])
+    if "--json" in sys.argv:
+        print(json.dumps({"tdi": tdi.tdi, "risk": tdi.risk_level}))
+    else:
+        print(f"Final TDI: {tdi.tdi} ({tdi.risk_level})")
 
 if __name__ == "__main__":
     main()
