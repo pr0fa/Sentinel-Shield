@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <h1>Code Analysis</h1>
+  <p class="page-subtitle">Detailed security review and metrics</p>
+</div>
+
+<!-- File tab -->
+<div class="file-tab">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+  </svg>
+  <span class="file-tab-name">{{ result.filename }}</span>
+  <span class="file-tab-meta">• Last scanned {{ time_ago }}</span>
+</div>
+
+<!-- ── Two-column layout ── -->
+<div class="analysis-grid">
+
+  <!-- Left: code viewer -->
+  <div class="card code-card">
+    <div class="code-titlebar">
+      <span class="code-title">Code View</span>
+      <div class="traffic-lights">
+        <span class="tl tl-red"></span>
+        <span class="tl tl-yellow"></span>
+        <span class="tl tl-green"></span>
+      </div>
+    </div>
+    <div class="code-viewer">
+      {% for line in code_lines %}
+      <div class="code-line {% if line.severity == 'HIGH' %}hl-high{% elif line.severity == 'MEDIUM' %}hl-medium{% elif line.severity == 'LOW' %}hl-low{% endif %}">
+        <span class="ln">{{ line.lineno }}</span>
+        <span class="lc">{{ line.code }}</span>
+        {% if line.flags %}
+          <span class="lf lf-{{ line.flags[0].severity | lower }}">
+            ⚠ {{ line.flags[0].rule_name }}
+          </span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Right: security score panel -->
+  <div class="score-panel">
+
+    <div class="card score-card">
+      <h3 class="score-heading">Security Score</h3>
+
+      <div class="formula-box">
+        <p class="formula-label">Calculation Formula:</p>
+        <p class="formula-text">Score = 100 − (Critical × 10 + High × 5 + Medium × 2)</p>
+      </div>
+
+      <div class="detected-issues">
+        <p class="section-label">Detected Issues:</p>
+        <div class="issue-row">
+          <span class="issue-name">Critical Vulnerabilities:</span>
+          <span class="issue-count critical">{{ result.score.critical }}</span>
+        </div>
+        <div class="issue-row">
+          <span class="issue-name">High Risk Issues:</span>
+          <span class="issue-count high">{{ result.score.high }}</span>
+        </div>
+        <div class="issue-row">
+          <span class="issue-name">Medium Risk Issues:</span>
+          <span class="issue-count medium">{{ result.score.medium }}</span>
+        </div>
+      </div>
+
+      <div class="calculation-box">
+        <p class="section-label">Calculation:</p>
+        <p class="calc-text">{{ result.score.formula }}</p>
+        <p class="calc-text">= 100 − {{ result.score.penalty }}</p>
+        <p class="calc-result">= {{ result.score.score }} / 100</p>
+      </div>
+
+      <div class="score-badge score-badge-{{ result.tdi.risk_level | lower }}">
+        <span class="score-number">{{ result.score.score }}</span>
+        <span class="score-label">Security Score</span>
+      </div>
+
+      <div class="key-findings">
+        <p class="section-label">Key Findings:</p>
+        {% if result.scan.red_flags %}
+          {% for flag in result.scan.red_flags[:6] %}
+          <div class="finding-row">
+            <span class="finding-icon finding-{{ flag.severity | lower }}">✕</span>
+            <span class="finding-text">{{ flag.rule_name }}</span>
+          </div>
+          {% endfor %}
+          {% if result.scan.red_flags | length > 6 %}
+          <p class="finding-more">+{{ result.scan.red_flags | length - 6 }} more findings</p>
+          {% endif %}
+        {% else %}
+          <div class="finding-row">
+            <span class="finding-icon finding-ok">✓</span>
+            <span class="finding-text">No security issues detected</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- TDI card -->
+    <div class="card tdi-card">
+      <h3 class="score-heading">Technical Debt Index</h3>
+      <div class="tdi-row">
+        <span>Complexity Score</span>
+        <strong>{{ result.tdi.complexity_score | int }}</strong>
+      </div>
+      <div class="tdi-row">
+        <span>Vulnerability Density</span>
+        <strong>{{ "%.1f" % result.tdi.vulnerability_density }}</strong>
+      </div>
+      <div class="tdi-row tdi-total">
+        <span>TDI Score</span>
+        <strong class="tdi-score-val badge badge-{{ result.tdi.risk_level | lower }}">{{ result.tdi.tdi }} {{ result.tdi.risk_level }}</strong>
+      </div>
+      <p class="tdi-formula">( {{ result.tdi.complexity_score | int }} × 0.5 ) + ( {{ "%.1f" % result.tdi.vulnerability_density }} × 0.5 )</p>
+      {% if result.tdi.alert %}
+      <div class="tdi-alert">⚠ {{ result.tdi.alert_message }}</div>
+      {% endif %}
+    </div>
+
+  </div><!-- /score-panel -->
+</div>
+
+<div class="back-link">
+  <a href="{{ url_for('dashboard') }}">← Back to Dashboard</a>
+</div>
+
+{% endblock %}
