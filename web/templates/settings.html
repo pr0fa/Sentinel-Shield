@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <h1>Settings</h1>
+  <p class="page-subtitle">Configure SentinelShield analysis parameters</p>
+</div>
+
+<div class="card" style="max-width:600px; padding:2rem;">
+  <h3 style="margin-bottom:1.5rem; color:#1e293b;">Analysis Configuration</h3>
+
+  <div style="margin-bottom:1.5rem;">
+    <label style="display:block; font-weight:500; color:#374151; margin-bottom:.5rem;">TDI Alert Threshold</label>
+    <input type="number" value="50" style="border:1px solid #e2e8f0; border-radius:6px; padding:.5rem .75rem; width:120px; font-size:.95rem;" />
+    <p style="margin-top:.4rem; font-size:.82rem; color:#64748b;">Modules exceeding this TDI score will trigger a HIGH risk alert. Default: 50</p>
+  </div>
+
+  <div style="margin-bottom:1.5rem;">
+    <label style="display:block; font-weight:500; color:#374151; margin-bottom:.5rem;">Scan Language</label>
+    <select style="border:1px solid #e2e8f0; border-radius:6px; padding:.5rem .75rem; font-size:.95rem;">
+      <option>Python (.py)</option>
+    </select>
+    <p style="margin-top:.4rem; font-size:.82rem; color:#64748b;">AST-based analysis is currently supported for Python files only.</p>
+  </div>
+
+  <button class="btn-primary" style="opacity:.5; cursor:not-allowed;">Save Settings</button>
+  <p style="margin-top:.75rem; font-size:.8rem; color:#94a3b8;">Settings persistence coming in a future iteration.</p>
+</div>
+
+{% endblock %}

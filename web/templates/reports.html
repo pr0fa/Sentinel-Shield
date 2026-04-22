@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <h1>Reports</h1>
+  <p class="page-subtitle">All scanned files and their risk assessments</p>
+</div>
+
+<div class="card table-card">
+  <div class="table-header-bar">
+    <span>All Analysis Results</span>
+  </div>
+  {% if results %}
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>File Name</th>
+        <th>Date</th>
+        <th>LOC</th>
+        <th>Complexity</th>
+        <th>Vuln. Density</th>
+        <th>TDI</th>
+        <th>Risk Level</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+      <tr class="result-row" onclick="window.location='{{ url_for('analysis', file_id=r.id) }}'">
+        <td>
+          <div class="file-cell">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <span>{{ r.filename }}</span>
+          </div>
+        </td>
+        <td><div class="date-cell">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          {{ r.scanned_at | time_ago }}
+        </div></td>
+        <td>{{ r.scan.loc }}</td>
+        <td>{{ r.complexity.total_complexity }}</td>
+        <td>{{ "%.1f" % r.scan.vulnerability_density }}</td>
+        <td><strong>{{ r.tdi.tdi }}</strong></td>
+        <td><span class="badge badge-{{ r.tdi.risk_level | lower }}">{{ r.tdi.risk_level }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="table-footer">
+    <span>Showing {{ results | length }} result{% if results | length != 1 %}s{% endif %}</span>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <p>No reports yet. <a href="{{ url_for('dashboard') }}">Upload a file</a> to get started.</p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
