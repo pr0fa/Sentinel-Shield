@@ -5,8 +5,17 @@ from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for
 from src.scanner import Scanner
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="web/templates", static_folder="web/static")
 app.secret_key = "sentinelshield-dev-key"
+
+@app.template_filter("time_ago")
+def time_ago_filter(dt):
+    diff = datetime.now() - dt
+    s = int(diff.total_seconds())
+    if s < 60: return f"{s}s ago"
+    if s < 3600: return f"{s // 60}m ago"
+    if s < 86400: return f"{s // 3600}h ago"
+    return f"{s // 86400}d ago"
 
 _scan_store = {}
 _scanner = Scanner()
@@ -17,10 +26,11 @@ def dashboard():
     return render_template("dashboard.html", results=results, active="dashboard")
 
 def _security_score(scan_result):
-    critical = len(scan_result.flags_by_severity("CRITICAL"))
-    high     = len(scan_result.flags_by_severity("HIGH"))
-    medium   = len(scan_result.flags_by_severity("MEDIUM"))
-    low      = len(scan_result.flags_by_severity("LOW"))
+    by_sev = lambda s: [f for f in scan_result.red_flags if f.severity == s]
+    critical = len(by_sev("CRITICAL"))
+    high     = len(by_sev("HIGH"))
+    medium   = len(by_sev("MEDIUM"))
+    low      = len(by_sev("LOW"))
     penalty  = critical * 10 + high * 5 + medium * 2 + low * 1
     score    = max(0, 100 - penalty)
     return {
@@ -52,5 +62,14 @@ def analysis(file_id):
     if not result: return redirect(url_for("dashboard"))
     return render_template("analysis.html", result=result, active="analysis")
 
-if name == "main":
+@app.route("/reports")
+def reports():
+    results = sorted(_scan_store.values(), key=lambda r: r["scanned_at"], reverse=True)
+    return render_template("reports.html", results=results, active="reports")
+
+@app.route("/settings")
+def settings():
+    return render_template("settings.html", active="settings")
+
+if __name__ == "__main__":
     app.run(debug=True, port=5000)
