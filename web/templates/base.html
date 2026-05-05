@@ -53,6 +53,9 @@
 
   <!-- ── Main content ── -->
   <main class="main">
+  {% for m in get_flashed_messages() %}
+    <div style="background:#dc2626;color:#fff;padding:.6rem 1rem;border-radius:.4rem;margin-bottom:1rem;font-size:.85rem;">{{ m }}</div>
+  {% endfor %}
     {% block content %}{% endblock %}
   </main>
 

@@ -2,11 +2,12 @@ import sys
 import os
 import uuid
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from src.scanner import Scanner
 
 app = Flask(__name__, template_folder="web/templates", static_folder="web/static")
 app.secret_key = "sentinelshield-dev-key"
+app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB cap 
 
 @app.template_filter("time_ago")
 def time_ago_filter(dt):
@@ -17,6 +18,7 @@ def time_ago_filter(dt):
     if s < 86400: return f"{s // 3600}h ago"
     return f"{s // 86400}d ago"
 
+ALLOWED_EXTENSIONS = {".py"}
 _scan_store = {}
 _scanner = Scanner()
 
@@ -44,6 +46,9 @@ def upload():
     files = request.files.getlist("files")
     for f in files:
         if not f.filename: continue
+        if os.path.splitext(f.filename)[1].lower() not in ALLOWED_EXTENSIONS:
+            flash(f"Rejected '{f.filename}', only .py files are allowed.", "error")
+            continue
         source = f.read().decode("utf-8", errors="replace")
         try:
             comp, scan, tdi = _scanner.scan_source(source, f.filename)
@@ -70,6 +75,11 @@ def reports():
 @app.route("/settings")
 def settings():
     return render_template("settings.html", active="settings")
+
+@app.errorhandler(413)
+def too_large(e):
+    flash("File too large, maximum upload size is 1 MB.", "error")
+    return redirect(url_for("dashboard"))
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
