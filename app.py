@@ -66,11 +66,30 @@ def upload():
         except SyntaxError: continue
     return redirect(url_for("dashboard"))
 
+_SEV_RANK = {"CRITICAL": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1}
+
+def _build_code_lines(result):
+    flags_by_line = {}
+    for flag in result["scan"].red_flags:
+        flags_by_line.setdefault(flag.lineno, []).append(flag)
+    code_lines = []
+    for i, code in enumerate(result["source"].splitlines(), start=1):
+        flags = flags_by_line.get(i, [])
+        severity = max((f.severity for f in flags), key=lambda s: _SEV_RANK.get(s, 0), default=None)
+        code_lines.append({"lineno": i, "code": code, "severity": severity, "flags": flags})
+    return code_lines
+
 @app.route("/analysis/<file_id>")
 def analysis(file_id):
     result = _scan_store.get(file_id)
     if not result: return redirect(url_for("dashboard"))
-    return render_template("analysis.html", result=result, active="analysis")
+    return render_template(
+        "analysis.html",
+        result=result,
+        code_lines=_build_code_lines(result),
+        time_ago=time_ago_filter(result["scanned_at"]),
+        active="analysis",
+    )
 
 @app.route("/reports")
 def reports():
