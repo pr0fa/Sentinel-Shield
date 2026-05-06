@@ -21,7 +21,12 @@ def time_ago_filter(dt):
 ALLOWED_EXTENSIONS = {".py"}
 _scan_store = {}
 _scanner = Scanner()
-
+@app.context_processor
+def _inject_latest_file_id():
+    if not _scan_store:
+        return {"latest_file_id": None}
+    latest = max(_scan_store.values(), key=lambda r: r["scanned_at"])
+    return {"latest_file_id": latest["id"]}
 @app.route("/")
 def dashboard():
     results = sorted(_scan_store.values(), key=lambda r: r["scanned_at"], reverse=True)
